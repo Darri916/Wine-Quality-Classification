@@ -1,200 +1,125 @@
-# 🍷 Wine Quality Prediction — Classification & Regression
+# Wine Quality Prediction — Classification & Regression
 
-## 📌 Project Overview
-
-This project explores wine quality prediction using machine learning from two perspectives:
-
-1. **Multi-class Classification**
-   Predict whether a wine is:
-
-   * Low quality
-   * Medium quality
-   * High quality
-
-2. **Regression**
-   Predict the **actual quality score** (0–10 scale) based on chemical properties.
-
-This project builds on earlier foundational models and focuses on:
-
-* Multi-class learning
-* Class imbalance challenges
-* Model comparison
-* Regression fundamentals
+![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python&logoColor=white)
+![Scikit-learn](https://img.shields.io/badge/Scikit--learn-ML-orange?logo=scikit-learn&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Complete-brightgreen)
+![Dataset](https://img.shields.io/badge/Dataset-UCI%20Wine%20Quality-red)
 
 ---
 
-## 📊 Dataset
+## Overview
+
+This project analyzes the Wine Quality dataset using both classification and regression approaches to evaluate how different modeling strategies perform under class imbalance and subjective labels.
+
+The focus is not just prediction accuracy, but understanding trade-offs between model performance, interpretability, and real-world decision impact.
+---
+## Dataset
 
 **Source:** UCI Wine Quality Dataset
 **Link:** https://archive.ics.uci.edu/dataset/186/wine+quality
 
-* winequality-red.csv
-* winequality-white.csv
-
-Both datasets were merged into a single dataset for analysis.
-
-**Total Samples:** 6,497
-**Features:** 11 chemical attributes
-Examples:
-
-* Fixed acidity
-* Volatile acidity
-* Citric acid
-* Residual sugar
-* Alcohol
-* pH
-
-**Target Variable:**
-
-* Classification: quality_label (Low / Medium / High)
-* Regression: quality (numeric score)
-
 ---
 
-## 🧠 Problem 1 — Multi-Class Classification
+## Problem 1 — Classification
 
-### Goal
-
-Predict the quality category of wine using chemical properties.
+**Goal:** Predict wine quality as Low / Medium / High based on chemical properties.
 
 ### Class Distribution
 
-* Medium: 4,974
-* High: 1,277
-* Low: 246
+| Label  | Count |
+|--------|-------|
+| Medium | 4,974 |
+| High   | 1,277 |
+| Low    |   246 |
 
-This shows a **class imbalance**, which makes prediction harder.
-
----
-
-## ⚙️ Models Used
-
-### 1️⃣ Logistic Regression
-
-Baseline model for multi-class classification.
-
-* Initial accuracy: ~0.77
-* Struggled with imbalanced data
-* Improved recall for minority classes when using:
-
-```
-class_weight='balanced'
-```
-
-Trade-off observed:
-
-* Better detection of rare classes
-* Reduced accuracy for dominant class
+The dataset is heavily skewed. Medium wines make up 77% of samples. Low quality wines — the most consequential class to detect — represent fewer than 4%.
 
 ---
 
-### 2️⃣ Random Forest Classifier (Best Performer)
+### Logistic Regression
 
-* Accuracy: ~0.85
-* More stable across classes
-* Handled imbalance better than Logistic Regression
-* Provided stronger overall performance
+Trained with `class_weight='balanced'` and `StandardScaler` to handle convergence and class imbalance.
 
----
+| Metric              | Value |
+|---------------------|-------|
+| Accuracy            | 0.54  |
+| Recall — Low class  | 0.63  |
 
-## 📉 Evaluation Metrics Used
-
-* Precision
-* Recall
-* F1-score
-* Confusion Matrix
-
-Key learning:
-
-> Accuracy alone is not enough when classes are imbalanced.
-
-Recall became important for detecting rare classes.
+Accuracy dropped from a naive ~0.77 baseline, but recall on the Low class rose substantially. The model sacrifices some correctness on the dominant class to avoid missing rare cases.
 
 ---
 
-## 📈 Problem 2 — Regression
+### Random Forest
 
-### Goal
+| Metric              | Value |
+|---------------------|-------|
+| Accuracy            | 0.85  |
+| Recall — Low class  | 0.12  |
 
-Predict the **actual wine quality score** using chemical properties.
+Random Forest achieves the highest overall accuracy, but recall for Low quality wines collapses to 0.12 — meaning it misses **88% of rare cases**. It performs well on the majority class and poorly where it matters most.
 
-### Model Used
+---
 
-* Linear Regression
+### Key Finding
 
-### Results
+> The "best" model depends on the cost of errors — not the highest accuracy.
 
-* MAE: 0.56
-* RMSE: 0.73
-* R² Score: 0.26
+This is the precision-recall tradeoff in practice. Accuracy rewards the model for getting Medium wines right, which is easy — there are thousands of them. Neither model is "best" without defining what the prediction will be used for. If the consequence of missing a low-quality wine is high (a QC system, a flagging tool), then a 54% accurate model with 0.63 recall outperforms an 85% accurate model with 0.12 recall.
+---
+## Error Analysis
+
+- Most misclassifications occur between Medium and High classes — the boundary is genuinely ambiguous
+- Low quality wines are frequently predicted as Medium due to class imbalance
+- Borderline samples near class thresholds are the hardest to separate
+
+Model errors are not random. They concentrate in overlapping regions of feature space where even human tasters likely disagree.
+
+---
+
+## Problem 2 — Regression
+
+**Goal:** Predict the raw quality score (0–10) using the same chemical features.
+
+### Model: Linear Regression
+
+| Metric | Value |
+|--------|-------|
+| MAE    | 0.57  |
+| RMSE   | 0.74  |
+| R²     | 0.26  |
 
 ### Interpretation
 
-* The model predicts wine quality within ~0.5 points on average.
-* R² ≈ 0.26 is expected because wine quality is subjective and influenced by human perception.
+The model predicts quality scores within ~0.57 points on average. An R² of 0.26 is low — but not surprising. Wine quality is a human judgment scored by tasters. Chemical measurements capture objective properties; they cannot fully encode subjective perception. The ceiling for any regression model on this dataset is constrained by the inherent noise in the labels themselves.
+
+---
+## Feature Insights
+
+Correlation analysis reveals which chemical properties most influence quality:
+
+| Feature | Correlation with Quality |
+|---|---|
+| Alcohol | +0.44 (strongest positive) |
+| Volatile Acidity | -0.27 (strongest negative) |
+| Density | -0.31 |
+| Chlorides | -0.20 |
+
+- Higher alcohol content is the single strongest predictor of quality
+- Volatile acidity consistently pulls quality scores down
+- No single feature dominates — the top correlation is only 0.44, which explains why regression R² is limited to 0.26
+- Wine quality is determined by interactions between features, not any one measurement alone
+---
+
+## Evaluation Approach
+
+Both problems use metrics beyond accuracy:
+
+- **Classification:** Precision, Recall, F1-score, Confusion Matrix — because accuracy alone misleads on imbalanced data
+- **Regression:** MAE, RMSE, R² — to measure both average error and explained variance
 
 ---
 
-## 🔍 Key Challenges Faced
-
-* Class imbalance affected classification performance
-* Logistic Regression required higher iterations to converge
-* Categorical column (`type`) had to be removed for regression model
-
-These are common real-world ML problems.
-
----
-
-## 🧪 Exploratory Data Analysis
-
-Performed:
-
-* Class distribution visualization
-* Correlation heatmap
-* Feature boxplots
-* Statistical summaries
-
-These helped understand:
-
-* Feature relationships
-* Class imbalance
-* Feature spread across wine types
-
----
-
-## 🧠 Key Learnings
-
-This project strengthened understanding of:
-
-* Multi-class classification
-* Handling imbalanced datasets
-* Model comparison techniques
-* Confusion matrix interpretation
-* Regression metrics:
-
-  * MAE
-  * RMSE
-  * R² Score
-* Real-world data preparation challenges
-
----
-
-## 🏁 Conclusion
-
-* Random Forest performed best for classification tasks.
-* Linear Regression provided a reasonable baseline for quality score prediction.
-* The dataset demonstrates the complexity of predicting subjective outcomes using numerical features.
-
-This project bridges the gap between:
-
-* Category prediction
-* Numeric prediction
-
-And serves as a strong step toward more advanced ML problems.
-
----
-
-## 📂 Project Structure
+## Project Structure
 
 ```
 data/
@@ -209,29 +134,10 @@ README.md
 
 ---
 
-## 🚀 Future Improvements
+## Future Improvements
 
-There are several ways this project can be further enhanced:
-
-* Apply feature scaling before training Logistic Regression to improve convergence and performance
-* Experiment with additional models such as Support Vector Machines (SVM)
-* Perform hyperparameter tuning (Grid Search / Random Search) to optimize model performance
-* Use cross-validation to ensure model stability and reduce overfitting
-* Explore more advanced ensemble methods for better classification accuracy
-
-These improvements can help build more robust and generalizable models.
-
----
-
-## 📌 Conclusion
-
-This project demonstrates a complete machine learning workflow for solving a multi-class classification problem and a regression problem using real-world structured data.
-
-Key observations:
-
-* Random Forest slightly outperformed Logistic Regression in classification tasks, showing the importance of testing multiple models.
-* Class imbalance had a noticeable impact on performance, especially for minority classes.
-* Linear Regression provided a reasonable baseline for predicting wine quality scores, though the subjective nature of quality limits prediction accuracy.
-
-Overall, this project highlights how different models behave on the same dataset and reinforces the importance of proper evaluation, preprocessing, and model comparison in practical machine learning.
-
+- [x] Apply feature scaling before training Logistic Regression
+- [ ] Hyperparameter tuning (Grid Search / Random Search) on Random Forest
+- [ ] Cross-validation to assess model stability across folds
+- [ ] Experiment with SVM and gradient boosting classifiers
+- [ ] Threshold tuning on classifier probabilities to optimize recall directly
