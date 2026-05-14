@@ -12,6 +12,7 @@
 This project analyzes the Wine Quality dataset using both classification and regression approaches to evaluate how different modeling strategies perform under class imbalance and subjective labels.
 
 The focus is not just prediction accuracy, but understanding trade-offs between model performance, interpretability, and real-world decision impact.
+
 ---
 ## Dataset
 
@@ -65,6 +66,7 @@ Random Forest achieves the highest overall accuracy, but recall for Low quality 
 > The "best" model depends on the cost of errors — not the highest accuracy.
 
 This is the precision-recall tradeoff in practice. Accuracy rewards the model for getting Medium wines right, which is easy — there are thousands of them. Neither model is "best" without defining what the prediction will be used for. If the consequence of missing a low-quality wine is high (a QC system, a flagging tool), then a 54% accurate model with 0.63 recall outperforms an 85% accurate model with 0.12 recall.
+
 ---
 ## Error Analysis
 
